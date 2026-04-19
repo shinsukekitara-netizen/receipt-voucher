@@ -105,7 +105,7 @@ export default function App() {
       const ext = voucher.imageMimeType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
       const imageName = pdfName.replace('.pdf', `_レシート.${ext}`);
 
-      // no-corsモードでブラウザから直接Apps Scriptへ送信
+      // Googleセッションクッキーを含めてApps Scriptへ送信
       const scriptUrl = 'https://script.google.com/macros/s/AKfycbxtwfHJmO7TXnAer4gkF3cOloHW_xQZ-PbhDbZrmZ1vUH3Xto8YPXERaojr6ukrfft4GA/exec';
       await fetch(scriptUrl, {
         method: 'POST',
@@ -118,8 +118,9 @@ export default function App() {
           imageName,
         }),
         mode: 'no-cors',
+        credentials: 'include',
       });
-      // no-corsのためレスポンスは読めないが、Apps Scriptは受信・実行している
+      // no-corsのためレスポンスは読めないが、Googleセッション付きで送信
 
       setSavedFileName(pdfName);
       setPdfSaved(true);
