@@ -17,18 +17,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // 1回目：リダイレクトを手動制御（POSTのままにするため）
     const resp = await fetch(scriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req.body),
-      redirect: 'follow',
+      redirect: 'manual',
     });
-    const text = await resp.text();
+
+    let finalResp: Response;
+    if (resp.status >= 300 && resp.status < 400) {
+      // リダイレクト先にもPOSTで再送
+      const location = resp.headers.get('location');
+      if (!location) throw new Error('リダイレクト先URLが取得できませんでした');
+      finalResp = await fetch(location, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+    } else {
+      finalResp = resp;
+    }
+
+    const text = await finalResp.text();
     try {
       const result = JSON.parse(text);
       return res.status(200).json(result);
     } catch {
-      // JSON以外（HTMLエラーページ等）が返された場合は内容を表示
       return res.status(500).json({ error: 'Apps Scriptエラー: ' + text.substring(0, 300) });
     }
   } catch (err) {
