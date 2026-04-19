@@ -27,14 +27,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let finalResp: Response;
     if (resp.status >= 300 && resp.status < 400) {
-      // リダイレクト先にもPOSTで再送
+      // リダイレクト先はGETで結果を取得（Apps Scriptの仕様）
       const location = resp.headers.get('location');
       if (!location) throw new Error('リダイレクト先URLが取得できませんでした');
-      finalResp = await fetch(location, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body),
-      });
+      finalResp = await fetch(location, { method: 'GET' });
     } else {
       finalResp = resp;
     }
