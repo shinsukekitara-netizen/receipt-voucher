@@ -92,7 +92,12 @@ export default function App() {
     setSaveError(null);
     try {
       // PDF生成
-      const blob = await generatePdf(templateRef.current, voucher);
+      let blob: Blob;
+      try {
+        blob = await generatePdf(templateRef.current, voucher);
+      } catch (pdfErr) {
+        throw new Error('PDF生成エラー: ' + (pdfErr instanceof Error ? pdfErr.message : String(pdfErr)));
+      }
       const pdfName = buildFileName(voucher);
       const pdfBase64 = await blobToBase64(blob);
 

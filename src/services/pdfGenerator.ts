@@ -10,14 +10,16 @@ export async function generatePdf(
   await document.fonts.ready;
 
   const canvas = await html2canvas(voucherElement, {
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
+    scale: 1,
+    useCORS: false,
+    allowTaint: false,
     backgroundColor: '#ffffff',
     logging: false,
+    imageTimeout: 0,
+    foreignObjectRendering: false,
   });
 
-  const imgData = canvas.toDataURL('image/png');
+  const imgData = canvas.toDataURL('image/jpeg', 0.85);
 
   // A4縦: 210mm × 297mm
   const pdf = new jsPDF({
