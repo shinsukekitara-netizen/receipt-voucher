@@ -27,6 +27,11 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+/** 標準base64 → URL安全base64（Apps Script の base64DecodeWebSafe に対応） */
+function toWebSafe(base64: string): string {
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
 export default function App() {
   const [step, setStep] = useState<AppStep>('image-capture');
   const [imageBase64, setImageBase64] = useState('');
@@ -96,9 +101,9 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pdfBase64,
+          pdfBase64:     toWebSafe(pdfBase64),
           pdfName,
-          imageBase64:   voucher.imageBase64,
+          imageBase64:   toWebSafe(voucher.imageBase64),
           imageMimeType: voucher.imageMimeType,
           imageName,
         }),
