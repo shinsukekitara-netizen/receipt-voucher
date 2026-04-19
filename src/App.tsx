@@ -27,13 +27,13 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-/** base64のパディングを補完して正規化 */
+/** base64をURLセーフ形式に変換（パディングなし）*/
 function normalizeBase64(base64: string): string {
-  // 余分な空白・改行を除去
-  const clean = base64.replace(/[\s\n\r]/g, '');
-  // パディング補完（4の倍数になるように）
-  const pad = clean.length % 4;
-  return pad > 0 ? clean + '='.repeat(4 - pad) : clean;
+  return base64
+    .replace(/[\s\n\r]/g, '')  // 空白・改行を除去
+    .replace(/\+/g, '-')        // + → - (URLセーフ変換)
+    .replace(/\//g, '_')        // / → _ (URLセーフ変換)
+    .replace(/=+$/g, '');       // 末尾パディング除去
 }
 
 export default function App() {
