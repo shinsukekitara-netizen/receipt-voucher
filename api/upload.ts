@@ -19,20 +19,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!serviceAccountJson) {
-    return res.status(500).json({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません。' });
+  const clientId     = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    return res.status(500).json({ error: 'Google OAuth2の環境変数が設定されていません。' });
   }
 
   try {
-    const credentials = JSON.parse(serviceAccountJson);
-    const folderId = '1dmoLRsgNMu0leyYQQRhc-7UoN3DZ_utp';
+    const auth = new google.auth.OAuth2(clientId, clientSecret);
+    auth.setCredentials({ refresh_token: refreshToken });
 
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/drive'],
-    });
     const drive = google.drive({ version: 'v3', auth });
+    const folderId = '1dmoLRsgNMu0leyYQQRhc-7UoN3DZ_utp';
 
     const { pdfBase64, pdfName, imageBase64, imageMimeType, imageName } = req.body;
 
