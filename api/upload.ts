@@ -25,23 +25,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       redirect: 'manual',
     });
 
-    let finalResp: Response;
-    if (resp.status >= 300 && resp.status < 400) {
-      // リダイレクト先はGETで結果を取得（Apps Scriptの仕様）
-      const location = resp.headers.get('location');
-      if (!location) throw new Error('リダイレクト先URLが取得できませんでした');
-      finalResp = await fetch(location, { method: 'GET' });
-    } else {
-      finalResp = resp;
-    }
-
-    const text = await finalResp.text();
-    try {
-      const result = JSON.parse(text);
-      return res.status(200).json(result);
-    } catch {
-      return res.status(500).json({ error: 'Apps Scriptエラー: ' + text.substring(0, 300) });
-    }
+    // デバッグ：リダイレクト先URLを返す
+    const location = resp.headers.get('location') ?? 'locationヘッダーなし';
+    return res.status(200).json({
+      error: `status=${resp.status} location=${location.substring(0, 200)}`
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : '不明なエラー';
     return res.status(500).json({ error: `アップロードに失敗しました: ${msg}` });
