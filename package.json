@@ -1,0 +1,22 @@
+{
+  "name": "receipt-voucher",
+  "version": "1.0.0",
+  "description": "レシートから出金依頼票PDFを生成するWebアプリ",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup-font": "node scripts/download-font.js",
+    "postinstall": "node scripts/download-font.js || true"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.37.0",
+    "adm-zip": "^0.5.16",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.15.0"
+  }
+}

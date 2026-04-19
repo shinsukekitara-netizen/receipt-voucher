@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: doto-nishi-voucher
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false          # Renderダッシュボードで手動設定
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /health

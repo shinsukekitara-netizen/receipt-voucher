@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#1a56db" />
+  <title>出金依頼票 作成</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #1a56db;
+      --primary-d: #1440a8;
+      --success:   #057a55;
+      --success-d: #046040;
+      --danger:    #c81e1e;
+      --bg:        #f3f4f6;
+      --card:      #ffffff;
+      --border:    #d1d5db;
+      --text:      #111827;
+      --muted:     #6b7280;
+      --radius:    12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+                   "Noto Sans JP", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+    }
+
+    /* ---- header ---- */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: .04em; }
+
+    /* ---- progress ---- */
+    .progress {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      background: var(--primary-d);
+      padding: 0 0 6px;
+    }
+    .prog-step {
+      display: flex;
+      align-items: center;
+      font-size: .72rem;
+      color: rgba(255,255,255,.5);
+      padding: 4px 12px;
+    }
+    .prog-step.active { color: #fff; font-weight: 700; }
+    .prog-step.done   { color: rgba(255,255,255,.7); }
+    .prog-step span.num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      font-size: .7rem;
+      margin-right: 5px;
+    }
+    .prog-step.active span.num { background: #fff; color: var(--primary); }
+    .prog-sep { color: rgba(255,255,255,.3); font-size: .8rem; align-self: center; padding-bottom: 6px; }
+
+    /* ---- main ---- */
+    main {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    /* ---- card ---- */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+
+    /* ---- step visibility ---- */
+    .step { display: none; }
+    .step.active { display: block; }
+
+    /* ---- image preview ---- */
+    .preview-wrap {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      background: #f9fafb;
+      min-height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .preview-wrap.has-image { border-style: solid; border-color: var(--primary); }
+    .preview-wrap img {
+      max-width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      display: none;
+    }
+    .preview-wrap.has-image img { display: block; }
+    .preview-placeholder {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px 12px;
+    }
+    .preview-placeholder svg { width: 48px; height: 48px; margin-bottom: 8px; }
+    .preview-placeholder p { font-size: .85rem; }
+
+    /* ---- buttons ---- */
+    .btn {
+      display: block;
+      width: 100%;
+      min-height: 54px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .03em;
+      transition: background .15s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+      margin-bottom: 10px;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-d); }
+    .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: var(--success-d); }
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+    .btn-outline:hover { background: #eff6ff; }
+    .btn-label {
+      display: block;
+      width: 100%;
+      min-height: 54px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .03em;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .15s;
+    }
+    .btn-label:active { opacity: .85; }
+
+    /* ---- form ---- */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .field input, .field textarea {
+      width: 100%;
+      min-height: 48px;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px; /* 16px: iOSのズーム防止 */
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color .2s;
+    }
+    .field input:focus, .field textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.15);
+    }
+    .field textarea { min-height: 72px; resize: vertical; }
+
+    /* ---- hint ---- */
+    .hint {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ---- loading overlay ---- */
+    #loading {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      gap: 16px;
+    }
+    #loading.show { display: flex; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingMsg { font-size: 1rem; font-weight: 600; }
+
+    /* ---- error banner ---- */
+    #errorBanner {
+      display: none;
+      background: #fef2f2;
+      border: 1.5px solid #fca5a5;
+      border-radius: 10px;
+      color: var(--danger);
+      padding: 12px 16px;
+      font-size: .9rem;
+      margin-bottom: 14px;
+    }
+    #errorBanner.show { display: block; }
+
+    /* ---- success card ---- */
+    .success-icon {
+      text-align: center;
+      font-size: 4rem;
+      margin-bottom: 8px;
+    }
+    .success-msg {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--success);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .success-sub {
+      text-align: center;
+      font-size: .85rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>土塔町西自治会　出金依頼票</h1>
+</header>
+
+<div class="progress">
+  <div class="prog-step active" id="ps1"><span class="num">1</span>レシート</div>
+  <div class="prog-sep">›</div>
+  <div class="prog-step" id="ps2"><span class="num">2</span>内容確認</div>
+  <div class="prog-sep">›</div>
+  <div class="prog-step" id="ps3"><span class="num">3</span>PDF完成</div>
+</div>
+
+<main>
+  <!-- ======= エラー表示 ======= -->
+  <div id="errorBanner"></div>
+
+  <!-- ======= STEP 1 : 画像選択 ======= -->
+  <div class="step active" id="step1">
+    <div class="card">
+      <p class="card-title">レシートを撮影・選択してください</p>
+
+      <div class="preview-wrap" id="previewWrap" onclick="document.getElementById('imageInput').click()">
+        <div class="preview-placeholder" id="placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.51 2.25 8.237 2.25 9.105v8.64c0 .96.732 1.755 1.692 1.875 1.09.14 2.207.21 3.308.21s2.218-.07 3.308-.21A1.92 1.92 0 0012.75 17.745V9.105c0-.868-.749-1.595-1.802-1.7a47.4 47.4 0 00-1.134-.175 2.31 2.31 0 01-1.641-1.055L7.17 5.25A2.25 2.25 0 005.007 4.5H4.5a2.25 2.25 0 00-2.25 2.25v.25" />
+            <circle cx="9.75" cy="12.75" r="2.25"/>
+          </svg>
+          <p>ここをタップして<br>カメラ撮影 / 画像を選択</p>
+        </div>
+        <img id="previewImg" alt="プレビュー" />
+      </div>
+
+      <input type="file" id="imageInput" accept="image/*" style="display:none" />
+
+      <label class="btn-label" for="imageInput">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        カメラ撮影 / 画像を選択
+      </label>
+
+      <button class="btn btn-success" id="analyzeBtn" disabled>
+        🔍　解析する
+      </button>
+    </div>
+  </div>
+
+  <!-- ======= STEP 2 : フォーム入力 ======= -->
+  <div class="step" id="step2">
+    <div class="card">
+      <p class="card-title">内容を確認・入力してください</p>
+
+      <div class="field">
+        <label for="fDate">起票日（令和表記）</label>
+        <input type="text" id="fDate" placeholder="令和8年04月13日" />
+        <p class="hint">OCRで読み取った日付を令和表記に変換しています</p>
+      </div>
+
+      <div class="field">
+        <label for="fApplicant">申請者 <span style="color:#c81e1e">*</span></label>
+        <input type="text" id="fApplicant" placeholder="氏名を入力" />
+      </div>
+
+      <div class="field">
+        <label for="fAmount">金額（円）</label>
+        <input type="number" id="fAmount" placeholder="例: 1234" inputmode="numeric" />
+        <p class="hint">OCRで読み取った金額を自動入力しています</p>
+      </div>
+
+      <div class="field">
+        <label for="fPayee">支払先</label>
+        <input type="text" id="fPayee" placeholder="店舗名・支払先を入力" />
+        <p class="hint">OCRで読み取った店舗名を自動入力しています</p>
+      </div>
+
+      <div class="field">
+        <label for="fPurpose">内容（使途） <span style="color:#c81e1e">*</span></label>
+        <textarea id="fPurpose" placeholder="例: 回覧板用印刷費、清掃用品購入 など"></textarea>
+      </div>
+
+      <button class="btn btn-success" id="generateBtn">
+        📄　PDFを生成する
+      </button>
+      <button class="btn btn-outline" id="backBtn">
+        ← 画像を撮り直す
+      </button>
+    </div>
+  </div>
+
+  <!-- ======= STEP 3 : 完了 ======= -->
+  <div class="step" id="step3">
+    <div class="card">
+      <div class="success-icon">✅</div>
+      <p class="success-msg">PDFが生成されました</p>
+      <p class="success-sub">
+        自動でダウンロードまたは新しいタブが開きます。<br>
+        開かない場合は下のボタンを押してください。
+      </p>
+      <button class="btn btn-primary" id="downloadAgainBtn">
+        📥　PDFを再ダウンロード
+      </button>
+      <button class="btn btn-outline" id="restartBtn">
+        🔄　別のレシートを処理する
+      </button>
+    </div>
+  </div>
+</main>
+
+<!-- ローディング -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p id="loadingMsg">処理中...</p>
+</div>
+
+<script>
+// ============================================================
+//  ユーティリティ
+// ============================================================
+function toReiwa(isoDate) {
+  if (!isoDate) return '';
+  const d = new Date(isoDate);
+  if (isNaN(d)) return isoDate;
+  const y   = d.getFullYear();
+  const m   = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const ry  = y - 2018;
+  return `令和${ry}年${m}月${day}日`;
+}
+
+function todayReiwa() {
+  const now  = new Date();
+  const iso  = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  return toReiwa(iso);
+}
+
+// ============================================================
+//  状態
+// ============================================================
+let currentImageId = null;
+let lastPdfBlob    = null;
+
+// ============================================================
+//  UI ヘルパー
+// ============================================================
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = '⚠️ ' + msg;
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function clearError() {
+  document.getElementById('errorBanner').classList.remove('show');
+}
+
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg || '処理中...';
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+
+function goToStep(n) {
+  [1, 2, 3].forEach(i => {
+    document.getElementById('step' + i).classList.toggle('active', i === n);
+    const ps = document.getElementById('ps' + i);
+    ps.classList.toggle('active', i === n);
+    ps.classList.toggle('done',   i < n);
+  });
+  clearError();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+//  STEP 1 : 画像選択
+// ============================================================
+const imageInput  = document.getElementById('imageInput');
+const previewWrap = document.getElementById('previewWrap');
+const previewImg  = document.getElementById('previewImg');
+const placeholder = document.getElementById('placeholder');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+
+imageInput.addEventListener('change', () => {
+  const file = imageInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    previewWrap.classList.add('has-image');
+    placeholder.style.display = 'none';
+    analyzeBtn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+});
+
+analyzeBtn.addEventListener('click', async () => {
+  const file = imageInput.files[0];
+  if (!file) { showError('画像を選択してください'); return; }
+
+  clearError();
+  showLoading('OCR 解析中...');
+  analyzeBtn.disabled = true;
+
+  try {
+    const fd = new FormData();
+    fd.append('image', file);
+
+    const resp = await fetch('/api/ocr', { method: 'POST', body: fd });
+    const data = await resp.json();
+
+    if (!data.success) throw new Error(data.error);
+
+    currentImageId = data.imageId;
+    prefillForm(data.ocr);
+    goToStep(2);
+  } catch (err) {
+    showError(err.message);
+    analyzeBtn.disabled = false;
+  } finally {
+    hideLoading();
+  }
+});
+
+// ============================================================
+//  STEP 2 : フォーム
+// ============================================================
+function prefillForm(ocr) {
+  document.getElementById('fDate').value     = toReiwa(ocr.date) || todayReiwa();
+  document.getElementById('fAmount').value   = ocr.amount  || '';
+  document.getElementById('fPayee').value    = ocr.store_name || '';
+  document.getElementById('fPurpose').value  = '';
+  document.getElementById('fApplicant').value = '';
+}
+
+document.getElementById('backBtn').addEventListener('click', () => {
+  goToStep(1);
+  analyzeBtn.disabled = false;
+});
+
+document.getElementById('generateBtn').addEventListener('click', async () => {
+  clearError();
+
+  const dateVal     = document.getElementById('fDate').value.trim();
+  const applicant   = document.getElementById('fApplicant').value.trim();
+  const amount      = document.getElementById('fAmount').value.trim();
+  const payee       = document.getElementById('fPayee').value.trim();
+  const purpose     = document.getElementById('fPurpose').value.trim();
+
+  if (!applicant) { showError('申請者を入力してください'); return; }
+  if (!purpose)   { showError('内容（使途）を入力してください'); return; }
+
+  showLoading('PDF 生成中...');
+
+  try {
+    const payload = {
+      imageId: currentImageId,
+      formData: {
+        date_reiwa: dateVal,
+        applicant,
+        amount,
+        payee,
+        purpose,
+      },
+    };
+
+    const resp = await fetch('/api/generate-pdf', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: 'PDF生成に失敗しました' }));
+      throw new Error(err.error);
+    }
+
+    const blob = await resp.blob();
+    lastPdfBlob = blob;
+    openPdf(blob);
+    goToStep(3);
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    hideLoading();
+  }
+});
+
+// ============================================================
+//  STEP 3 : 完了
+// ============================================================
+function openPdf(blob) {
+  const url = URL.createObjectURL(blob);
+
+  // iOS Safari: window.open でブラウザ内PDFビューアが開く
+  // Android Chrome: ダウンロードされる
+  const opened = window.open(url, '_blank');
+
+  // フォールバック: <a> タグ経由でダウンロード
+  if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+    triggerDownload(url);
+  }
+}
+
+function triggerDownload(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '出金依頼票.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+document.getElementById('downloadAgainBtn').addEventListener('click', () => {
+  if (lastPdfBlob) openPdf(lastPdfBlob);
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  // リセット
+  imageInput.value  = '';
+  previewImg.src    = '';
+  previewWrap.classList.remove('has-image');
+  placeholder.style.display = '';
+  analyzeBtn.disabled = true;
+  currentImageId = null;
+  lastPdfBlob    = null;
+  goToStep(1);
+});
+</script>
+</body>
+</html>
