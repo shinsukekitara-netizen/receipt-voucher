@@ -11,7 +11,9 @@ import { generatePdf, buildFileName } from './services/pdfGenerator';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return jst.toISOString().slice(0, 10);
 }
 
 /** Blob → 純粋なbase64文字列（data:プレフィックスなし） */
