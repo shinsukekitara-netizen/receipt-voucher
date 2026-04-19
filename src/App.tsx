@@ -1,13 +1,12 @@
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import StepIndicator from './components/StepIndicator';
 import ImageCapture from './components/ImageCapture';
 import InfoInput from './components/InfoInput';
-import ProcessingScreen from './components/ProcessingScreen';
 import VoucherReview from './components/VoucherReview';
 import SaveConfirmation from './components/SaveConfirmation';
 import CompletionScreen from './components/CompletionScreen';
 import VoucherTemplate from './components/VoucherTemplate';
-import type { AppStep, OcrResult, VoucherData } from './types/voucher';
+import type { AppStep, VoucherData } from './types/voucher';
 import { generatePdf, buildFileName } from './services/pdfGenerator';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -15,7 +14,6 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** スマホでWeb Share API（ファイル共有）が使えるか判定 */
 function checkCanShare(): boolean {
   try {
     return (
@@ -33,10 +31,7 @@ export default function App() {
   const [step, setStep] = useState<AppStep>('image-capture');
   const [imageBase64, setImageBase64] = useState('');
   const [imageMimeType, setImageMimeType] = useState('image/jpeg');
-  const [applicantName, setApplicantName] = useState('');
-  const [purpose, setPurpose] = useState('');
   const [voucher, setVoucher] = useState<VoucherData | null>(null);
-  const [ocrError, setOcrError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedFileName, setSavedFileName] = useState<string | undefined>(undefined);
@@ -52,40 +47,37 @@ export default function App() {
     setStep('info-input');
   };
 
-  // Step 2 → 3（OCR処理へ）
-  const handleInfoNext = (name: string, purp: string) => {
-    setApplicantName(name);
-    setPurpose(purp);
-    setOcrError(null);
-    setStep('processing');
-  };
-
-  // Step 3 完了 → 4
-  const handleOcrComplete = useCallback((result: OcrResult) => {
+  // Step 2 → 3（直接確認画面へ）
+  const handleInfoNext = (data: {
+    applicantName: string;
+    purpose: string;
+    payee: string;
+    amount: string;
+    receiptDate: string;
+  }) => {
+    const amount = parseFloat(data.amount.replace(/,/g, '')) || 0;
     setVoucher({
-      applicantName,
-      purpose,
-      ...result,
-      createdAt: today(),
+      applicantName: data.applicantName,
+      purpose:       data.purpose,
+      payee:         data.payee,
+      amount,
+      amountText:    `¥${amount.toLocaleString('ja-JP')}`,
+      receiptDate:   data.receiptDate,
+      items:         '',
+      createdAt:     today(),
       imageBase64,
       imageMimeType,
     });
     setStep('voucher-review');
-  }, [applicantName, purpose, imageBase64, imageMimeType]);
+  };
 
-  // Step 3 エラー → Step 2 に戻る
-  const handleOcrError = useCallback((msg: string) => {
-    setOcrError(msg);
-    setStep('info-input');
-  }, []);
-
-  // Step 4 確認 → 5
+  // Step 3 確認 → 4
   const handleVoucherConfirm = (updated: VoucherData) => {
     setVoucher(updated);
     setStep('save-confirmation');
   };
 
-  // Step 5 → PDFを保存/共有
+  // Step 4 → PDFを保存/共有
   const handleSavePdf = async () => {
     if (!voucher || !templateRef.current) return;
     setSaving(true);
@@ -95,11 +87,9 @@ export default function App() {
       const fileName = buildFileName(voucher);
 
       if (canShare) {
-        // スマホ：Web Share APIでGoogle Drive/LINE等へ共有
         const file = new File([blob], fileName, { type: 'application/pdf' });
         await navigator.share({ files: [file], title: fileName });
       } else {
-        // PC：ダウンロードリンクで保存
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -114,17 +104,14 @@ export default function App() {
       setPdfSaved(true);
       setStep('complete');
     } catch (err) {
-      // ユーザーが共有をキャンセルした場合は無視
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
+      if (err instanceof Error && err.name === 'AbortError') return;
       setSaveError(err instanceof Error ? err.message : 'PDFの保存中にエラーが発生しました。');
     } finally {
       setSaving(false);
     }
   };
 
-  // Step 5 → スキップ
+  // Step 4 → スキップ
   const handleSkipSave = () => {
     setSavedFileName(voucher ? buildFileName(voucher) : undefined);
     setPdfSaved(false);
@@ -136,10 +123,7 @@ export default function App() {
     setStep('image-capture');
     setImageBase64('');
     setImageMimeType('image/jpeg');
-    setApplicantName('');
-    setPurpose('');
     setVoucher(null);
-    setOcrError(null);
     setSaveError(null);
     setSavedFileName(undefined);
     setPdfSaved(false);
@@ -159,28 +143,16 @@ export default function App() {
         )}
 
         {step === 'info-input' && (
-          <>
-            {ocrError && (
-              <div className="mx-5 mt-4 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-600">{ocrError}</p>
-              </div>
-            )}
-            <InfoInput
-              initialName={applicantName}
-              initialPurpose={purpose}
-              onNext={handleInfoNext}
-              onBack={() => setStep('image-capture')}
-            />
-          </>
-        )}
-
-        {step === 'processing' && (
-          <ProcessingScreen
-            imageBase64={imageBase64}
-            imageMimeType={imageMimeType}
-            onComplete={handleOcrComplete}
-            onError={handleOcrError}
+          <InfoInput
+            initial={{
+              applicantName: voucher?.applicantName,
+              purpose:       voucher?.purpose,
+              payee:         voucher?.payee,
+              amount:        voucher?.amount ? String(voucher.amount) : '',
+              receiptDate:   voucher?.receiptDate,
+            }}
+            onNext={handleInfoNext}
+            onBack={() => setStep('image-capture')}
           />
         )}
 

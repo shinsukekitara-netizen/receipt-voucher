@@ -12,7 +12,8 @@
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(npm run:*)",
-      "Bash(ls .env*)"
+      "Bash(ls .env*)",
+      "Bash(ls *.json)"
     ]
   }
 }

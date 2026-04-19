@@ -11,18 +11,9 @@ export interface VoucherData {
   imageMimeType: string;
 }
 
-export interface OcrResult {
-  payee: string;
-  amount: number;
-  amountText: string;
-  receiptDate: string;
-  items: string;
-}
-
 export type AppStep =
   | 'image-capture'
   | 'info-input'
-  | 'processing'
   | 'voucher-review'
   | 'save-confirmation'
   | 'complete';
@@ -30,10 +21,9 @@ export type AppStep =
 export const STEP_NUMBER: Record<AppStep, number> = {
   'image-capture': 1,
   'info-input': 2,
-  'processing': 3,
-  'voucher-review': 4,
-  'save-confirmation': 5,
-  'complete': 6,
+  'voucher-review': 3,
+  'save-confirmation': 4,
+  'complete': 5,
 };
 
-export const TOTAL_STEPS = 6;
+export const TOTAL_STEPS = 5;

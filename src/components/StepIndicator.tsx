@@ -7,12 +7,10 @@ interface Props {
 
 const STEP_LABELS: Record<number, string> = {
   1: '画像取得',
-  2: '基本情報',
-  3: 'AI解析',
-  4: '確認',
-  5: '保存確認',
-  6: '保存中',
-  7: '完了',
+  2: '情報入力',
+  3: '確認',
+  4: '保存確認',
+  5: '完了',
 };
 
 export default function StepIndicator({ currentStep }: Props) {
