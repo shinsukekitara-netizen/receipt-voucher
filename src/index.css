@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Noto Sans JP', sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .text-navy-700 {
+    color: #1a3a5c;
+  }
+  .bg-navy-700 {
+    background-color: #1a3a5c;
+  }
+  .border-navy-700 {
+    border-color: #1a3a5c;
+  }
+  .bg-navy-600 {
+    background-color: #2e5a87;
+  }
+  .hover\:bg-navy-600:hover {
+    background-color: #2e5a87;
+  }
+  .bg-navy-500 {
+    background-color: #3b6d9c;
+  }
+  .bg-navy-50 {
+    background-color: #e8eef5;
+  }
+  .bg-navy-100 {
+    background-color: #c5d3e4;
+  }
+  .border-navy-200 {
+    border-color: #9fb6cf;
+  }
+  .border-navy-300 {
+    border-color: #7899ba;
+  }
+  .border-navy-500 {
+    border-color: #3b6d9c;
+  }
+  .text-navy-600 {
+    color: #2e5a87;
+  }
+  .ring-navy-500 {
+    --tw-ring-color: #3b6d9c;
+  }
+  .focus\:ring-navy-500:focus {
+    --tw-ring-color: #3b6d9c;
+  }
+  .focus\:border-navy-500:focus {
+    border-color: #3b6d9c;
+  }
+  .hover\:bg-navy-50:hover {
+    background-color: #e8eef5;
+  }
+  .hover\:bg-navy-100:hover {
+    background-color: #c5d3e4;
+  }
+  .hover\:border-navy-400:hover {
+    border-color: #5a83ab;
+  }
+  .hover\:border-navy-500:hover {
+    border-color: #3b6d9c;
+  }
+}
