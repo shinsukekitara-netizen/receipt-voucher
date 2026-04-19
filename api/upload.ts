@@ -1,8 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { google } from 'googleapis';
+import { Readable } from 'stream';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '25mb' } },
 };
+
+/** URLセーフbase64 → 標準base64 → Buffer */
+function base64ToBuffer(b64: string): Buffer {
+  const standard = b64.replace(/[-]/g, '+').replace(/[_]/g, '/');
+  return Buffer.from(standard, 'base64');
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,25 +19,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const scriptUrl = process.env.APPS_SCRIPT_URL;
-  if (!scriptUrl) {
-    return res.status(500).json({ error: 'APPS_SCRIPT_URL が設定されていません。' });
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!serviceAccountJson) {
+    return res.status(500).json({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません。' });
   }
 
   try {
-    // 1回目：リダイレクトを手動制御（POSTのままにするため）
-    const resp = await fetch(scriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body),
-      redirect: 'manual',
+    const credentials = JSON.parse(serviceAccountJson);
+    const folderId = '1dmoLRsgNMu0leyYQQRhc-7UoN3DZ_utp';
+
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/drive'],
+    });
+    const drive = google.drive({ version: 'v3', auth });
+
+    const { pdfBase64, pdfName, imageBase64, imageMimeType, imageName } = req.body;
+
+    // PDF をアップロード
+    const pdfBuffer = base64ToBuffer(pdfBase64);
+    await drive.files.create({
+      requestBody: { name: pdfName, parents: [folderId] },
+      media: { mimeType: 'application/pdf', body: Readable.from(pdfBuffer) },
     });
 
-    // デバッグ：リダイレクト先URLを返す
-    const location = resp.headers.get('location') ?? 'locationヘッダーなし';
-    return res.status(200).json({
-      error: `status=${resp.status} location=${location.substring(0, 200)}`
+    // レシート画像をアップロード
+    const imgBuffer = base64ToBuffer(imageBase64);
+    await drive.files.create({
+      requestBody: { name: imageName, parents: [folderId] },
+      media: { mimeType: imageMimeType, body: Readable.from(imgBuffer) },
     });
+
+    return res.status(200).json({ success: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : '不明なエラー';
     return res.status(500).json({ error: `アップロードに失敗しました: ${msg}` });

@@ -105,11 +105,10 @@ export default function App() {
       const ext = voucher.imageMimeType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
       const imageName = pdfName.replace('.pdf', `_レシート.${ext}`);
 
-      // Googleセッションクッキーを含めてApps Scriptへ送信
-      const scriptUrl = 'https://script.google.com/macros/s/AKfycbxtwfHJmO7TXnAer4gkF3cOloHW_xQZ-PbhDbZrmZ1vUH3Xto8YPXERaojr6ukrfft4GA/exec';
-      await fetch(scriptUrl, {
+      // Vercel API → サービスアカウント → Google Drive
+      const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pdfBase64:     normalizeBase64(pdfBase64),
           pdfName,
@@ -117,10 +116,12 @@ export default function App() {
           imageMimeType: voucher.imageMimeType,
           imageName,
         }),
-        mode: 'no-cors',
-        credentials: 'include',
       });
-      // no-corsのためレスポンスは読めないが、Googleセッション付きで送信
+
+      const result = await response.json() as { success?: boolean; error?: string };
+      if (!response.ok || result.error) {
+        throw new Error(result.error ?? 'Google Driveへの保存に失敗しました。');
+      }
 
       setSavedFileName(pdfName);
       setPdfSaved(true);
