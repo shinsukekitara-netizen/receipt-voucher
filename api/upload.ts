@@ -25,9 +25,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     const text = await resp.text();
     try {
-      return res.status(200).json(JSON.parse(text));
+      const result = JSON.parse(text);
+      return res.status(200).json(result);
     } catch {
-      return res.status(200).json({ success: true });
+      // JSON以外（HTMLエラーページ等）が返された場合は内容を表示
+      return res.status(500).json({ error: 'Apps Scriptエラー: ' + text.substring(0, 300) });
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : '不明なエラー';
