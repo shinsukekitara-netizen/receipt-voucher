@@ -14,17 +14,17 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function checkCanShare(): boolean {
-  try {
-    return (
-      typeof navigator !== 'undefined' &&
-      typeof navigator.share === 'function' &&
-      typeof navigator.canShare === 'function' &&
-      navigator.canShare({ files: [new File([''], 'test.pdf', { type: 'application/pdf' })] })
-    );
-  } catch {
-    return false;
-  }
+/** Blob → 純粋なbase64文字列（data:プレフィックスなし） */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve(dataUrl.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 export default function App() {
@@ -38,7 +38,6 @@ export default function App() {
   const [pdfSaved, setPdfSaved] = useState(false);
 
   const templateRef = useRef<HTMLDivElement>(null);
-  const canShare = checkCanShare();
 
   // Step 1 → 2
   const handleImageNext = (base64: string, mimeType: string) => {
@@ -77,35 +76,44 @@ export default function App() {
     setStep('save-confirmation');
   };
 
-  // Step 4 → PDFを保存/共有
-  const handleSavePdf = async () => {
+  // Step 4 → Google Driveに保存（PDF + レシート画像）
+  const handleSaveToDrive = async () => {
     if (!voucher || !templateRef.current) return;
     setSaving(true);
     setSaveError(null);
     try {
+      // PDF生成
       const blob = await generatePdf(templateRef.current, voucher);
-      const fileName = buildFileName(voucher);
+      const pdfName = buildFileName(voucher);
+      const pdfBase64 = await blobToBase64(blob);
 
-      if (canShare) {
-        const file = new File([blob], fileName, { type: 'application/pdf' });
-        await navigator.share({ files: [file], title: fileName });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      // レシート画像のファイル名
+      const ext = voucher.imageMimeType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
+      const imageName = pdfName.replace('.pdf', `_レシート.${ext}`);
+
+      // Vercel API → Apps Script → Google Drive
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pdfBase64,
+          pdfName,
+          imageBase64:   voucher.imageBase64,
+          imageMimeType: voucher.imageMimeType,
+          imageName,
+        }),
+      });
+
+      const result = await response.json() as { success?: boolean; error?: string };
+      if (!response.ok || result.error) {
+        throw new Error(result.error ?? 'Google Driveへの保存に失敗しました。');
       }
 
-      setSavedFileName(fileName);
+      setSavedFileName(pdfName);
       setPdfSaved(true);
       setStep('complete');
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      setSaveError(err instanceof Error ? err.message : 'PDFの保存中にエラーが発生しました。');
+      setSaveError(err instanceof Error ? err.message : 'エラーが発生しました。');
     } finally {
       setSaving(false);
     }
@@ -175,13 +183,12 @@ export default function App() {
             {saving ? (
               <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-5">
                 <Loader2 className="w-16 h-16 text-navy-600 animate-spin" />
-                <p className="text-lg font-bold text-navy-700">PDFを生成中...</p>
+                <p className="text-lg font-bold text-navy-700">Google Driveに保存中...</p>
               </div>
             ) : (
               <SaveConfirmation
-                onSavePdf={handleSavePdf}
+                onSaveToDrive={handleSaveToDrive}
                 onSkip={handleSkipSave}
-                canShare={canShare}
               />
             )}
           </>
