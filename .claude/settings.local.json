@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git --version)"
+      "Bash(npm create:*)",
+      "Bash(cmd.exe /c \"where node\")",
+      "Bash(cmd.exe /c \"where npm\")",
+      "Bash(cmd.exe /c \"node --version && npm --version\")",
+      "Bash(powershell.exe -Command \"node --version; npm --version\")",
+      "Bash(where python:*)",
+      "Bash(where python3:*)",
+      "Bash(where py:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(ls .env*)"
     ]
   }
 }

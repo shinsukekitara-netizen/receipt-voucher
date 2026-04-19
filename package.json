@@ -1,22 +1,30 @@
 {
   "name": "receipt-voucher",
+  "private": true,
   "version": "1.0.0",
-  "description": "レシートから出金依頼票PDFを生成するWebアプリ",
-  "main": "server.js",
+  "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "setup-font": "node scripts/download-font.js",
-    "postinstall": "node scripts/download-font.js || true"
-  },
-  "engines": {
-    "node": ">=18"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.37.0",
-    "adm-zip": "^0.5.16",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "multer": "^1.4.5-lts.1",
-    "pdfkit": "^0.15.0"
+    "@anthropic-ai/sdk": "^0.39.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^0.511.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vercel/node": "^5.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
   }
 }
