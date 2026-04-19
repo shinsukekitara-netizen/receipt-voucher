@@ -105,10 +105,11 @@ export default function App() {
       const ext = voucher.imageMimeType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
       const imageName = pdfName.replace('.pdf', `_レシート.${ext}`);
 
-      // Vercel API → Apps Script → Google Drive
-      const response = await fetch('/api/upload', {
+      // ブラウザから直接 Apps Script へ送信（Vercel経由だと401になるため）
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbxtwfHJmO7TXnAer4gkF3cOloHW_xQZ-PbhDbZrmZ1vUH3Xto8YPXERaojr6ukrfft4GA/exec';
+      const response = await fetch(scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
           pdfBase64:     normalizeBase64(pdfBase64),
           pdfName,
@@ -116,6 +117,7 @@ export default function App() {
           imageMimeType: voucher.imageMimeType,
           imageName,
         }),
+        redirect: 'follow',
       });
 
       const result = await response.json() as { success?: boolean; error?: string };
