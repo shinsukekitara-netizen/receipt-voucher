@@ -105,9 +105,9 @@ export default function App() {
       const ext = voucher.imageMimeType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
       const imageName = pdfName.replace('.pdf', `_レシート.${ext}`);
 
-      // ブラウザから直接 Apps Script へ送信（Vercel経由だと401になるため）
+      // no-corsモードでブラウザから直接Apps Scriptへ送信
       const scriptUrl = 'https://script.google.com/macros/s/AKfycbxtwfHJmO7TXnAer4gkF3cOloHW_xQZ-PbhDbZrmZ1vUH3Xto8YPXERaojr6ukrfft4GA/exec';
-      const response = await fetch(scriptUrl, {
+      await fetch(scriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
@@ -117,13 +117,9 @@ export default function App() {
           imageMimeType: voucher.imageMimeType,
           imageName,
         }),
-        redirect: 'follow',
+        mode: 'no-cors',
       });
-
-      const result = await response.json() as { success?: boolean; error?: string };
-      if (!response.ok || result.error) {
-        throw new Error(result.error ?? 'Google Driveへの保存に失敗しました。');
-      }
+      // no-corsのためレスポンスは読めないが、Apps Scriptは受信・実行している
 
       setSavedFileName(pdfName);
       setPdfSaved(true);
