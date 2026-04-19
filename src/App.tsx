@@ -27,9 +27,13 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-/** 標準base64 → URL安全base64（Apps Script の base64DecodeWebSafe に対応） */
-function toWebSafe(base64: string): string {
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+/** base64のパディングを補完して正規化 */
+function normalizeBase64(base64: string): string {
+  // 余分な空白・改行を除去
+  const clean = base64.replace(/[\s\n\r]/g, '');
+  // パディング補完（4の倍数になるように）
+  const pad = clean.length % 4;
+  return pad > 0 ? clean + '='.repeat(4 - pad) : clean;
 }
 
 export default function App() {
@@ -101,9 +105,9 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pdfBase64:     toWebSafe(pdfBase64),
+          pdfBase64:     normalizeBase64(pdfBase64),
           pdfName,
-          imageBase64:   toWebSafe(voucher.imageBase64),
+          imageBase64:   normalizeBase64(voucher.imageBase64),
           imageMimeType: voucher.imageMimeType,
           imageName,
         }),
